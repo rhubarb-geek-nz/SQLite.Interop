@@ -68,7 +68,7 @@ fi
 	rm -rf runtimes
 
 	unzip ../../../SQLite.Interop*.zip
-	mv $(find . -name SQLite.Interop.dll -type f) .
+	mv $(find . -name SQLite.Interop.dll -type f | head -1) .
 )
 
 "$DOTNET" bin/Release/net6.0/test.dll
