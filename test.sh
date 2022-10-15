@@ -24,7 +24,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT
 
 clean()
 {
-	rm -rf test.db bin obj dotnet-sdk dotnet-install.sh
+	rm -rf test.db bin obj tmp dotnet-sdk dotnet-install.sh
 }
 
 clean 
@@ -70,5 +70,35 @@ fi
 	unzip ../../../SQLite.Interop*.zip
 	mv $(find . -name SQLite.Interop.dll -type f) .
 )
+
+(
+	set -e
+
+	mkdir tmp
+
+	cd tmp
+
+	VERSION=1.0.115.5
+
+	ZIPNAME="sqlite-netStandard20-binary-$VERSION.zip"
+	SHA256=aa9bb9e397685cf67e7faf286a90bb6b88a3e2ac9a944cf833fc4bab056b2830
+
+	curl --silent --fail --output "$ZIPNAME" --location "https://system.data.sqlite.org/blobs/$VERSION/$ZIPNAME"
+
+	case $(uname) in
+		Darwin )
+			shasum -a 256 "$ZIPNAME" | grep "^$SHA256"
+			;;
+		* )
+			sha256sum "$ZIPNAME" | grep "^$SHA256"
+			;;
+	esac
+
+	unzip "$ZIPNAME" "*.dll"
+
+	mv *.dll "../bin/Release/net6.0"
+)
+
+rm -rf tmp
 
 "$DOTNET" bin/Release/net6.0/test.dll
