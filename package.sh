@@ -18,8 +18,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-SHA256=16e3b1b1112bbd2665c743ede20dec3cefd6d05bf8ee5ddc3de3edb7d28cba28
-VERSION=1.0.113.0
+SHA256=18d48f36c21a4e9f458aef3ee7a769a917754bfa9f3756b3209aea5628054e40
+VERSION=1.0.114.0
 
 ZIPNAME="sqlite-netFx-source-$VERSION.zip"
 
@@ -158,16 +158,14 @@ fi
 
 RUNTIME="runtimes/$RUNTIME/native"
 
-mkdir -p "pkg/$RUNTIME/netstandard2.0" "pkg/$RUNTIME/netstandard2.1"
+mkdir -p "pkg/$RUNTIME"
 
-mv "$DLLPATH" "pkg/$RUNTIME/netstandard2.0"
-
-cp "pkg/$RUNTIME/netstandard2.0/$DLLNAME.dll" "pkg/$RUNTIME/netstandard2.1"
+mv "$DLLPATH" "pkg/$RUNTIME/"
 
 (
 	set -e
 
 	cd pkg
 
-	zip "../$DLLNAME-$VERSION-$ID.$VERSION_ID.zip" "$RUNTIME/netstandard2."*/"$DLLNAME.dll"
+	zip "../$DLLNAME-$VERSION-$ID.$VERSION_ID.zip" "$RUNTIME/$DLLNAME.dll"
 )
