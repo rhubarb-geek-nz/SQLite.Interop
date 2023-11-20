@@ -18,8 +18,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-SHA256=b9a96a6245284c8a4a24394cf8f1045f1cfedc0ce552fa601868872f23677c1b
-VERSION=1.0.117.0
+SHA256=bb599fa265088abb8a7d4af6218cae97df8b9c8ed6f04fb940a5d564920ee6a1
+VERSION=1.0.118.0
 
 ZIPNAME="sqlite-netFx-source-$VERSION.zip"
 

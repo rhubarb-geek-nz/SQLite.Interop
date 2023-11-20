@@ -78,10 +78,10 @@ fi
 
 	cd tmp
 
-	VERSION=1.0.117.0
+	VERSION=1.0.118.0
 
 	ZIPNAME="sqlite-netStandard20-binary-$VERSION.zip"
-	SHA256=d35cb72316bf55349305fb0698c52c8b8117127a3211ff163c288fa2a7f9b633
+	SHA256=21093e5ffa803009c6b02e5f5495b5e07971fd0371c667359960419068a432f2
 
 	curl --silent --fail --output "$ZIPNAME" --location "https://system.data.sqlite.org/blobs/$VERSION/$ZIPNAME"
 
