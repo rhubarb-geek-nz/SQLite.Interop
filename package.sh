@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-#  Copyright 2022, Roger Brown
+#  Copyright 2023, Roger Brown
 #
 #  This file is part of rhubarb-geek-nz/SQLite.Interop.
 #
@@ -23,14 +23,38 @@ VERSION=1.0.118.0
 
 ZIPNAME="sqlite-netFx-source-$VERSION.zip"
 
+DOTNET=dotnet
+DOTNET_CLI_TELEMETRY_OPTOUT=true
+export DOTNET_CLI_TELEMETRY_OPTOUT
+
 cleanup()
 {
-	rm -rf src pkg "$ZIPNAME"
+	rm -rf src pkg "$ZIPNAME" rid/bin rid/obj dotnet-sdk dotnet-install.sh
 }
 
 trap cleanup 0
 
 rm -rf *.zip
+
+cleanup
+
+if "$DOTNET" --version
+then
+	:
+else
+	curl --location --fail --silent --output dotnet-install.sh https://dot.net/v1/dotnet-install.sh
+
+	chmod +x dotnet-install.sh
+
+	./dotnet-install.sh --install-dir dotnet-sdk --channel 6.0
+
+	DOTNET="dotnet-sdk/dotnet"
+fi
+
+"$DOTNET" build rid/rid.csproj --configuration Release
+
+RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
+RIDOS=$(echo $RID | sed y/\-/\ / | while read A B; do echo $A; done)
 
 cleanup
 
@@ -81,91 +105,30 @@ fi
 
 case $(uname) in
 	Darwin )
-		ID="osx"
-		if test -z "$MACOSX_DEPLOYMENT_TARGET"
-		then
-			VERSION_ID=$(sw_vers -productVersion)
-		else
-			VERSION_ID="$MACOSX_DEPLOYMENT_TARGET"
-		fi
-		ARCH=
-		;;
-	Linux )
-		FORMAT=$( objdump -p "$DLLPATH" | grep "$DLLNAME.dll" | while read A; do for B in $A; do C="$B"; done ; echo "$C"; break; done ) 
-
-		ID=$( . /etc/os-release ; echo $ID )
-		VERSION_ID=$( . /etc/os-release ; echo $VERSION_ID )
-
-		case "$FORMAT" in
-			*arm )
-				ARCH=arm
-				;;
-			*aarch64 )
-				ARCH=arm64
-				;;
-			*x86-64 )
-				ARCH=x64
-				;;
-			*i386 )
-				ARCH=x86
-				;;
-			* )
-				echo FORMAT="$FORMAT" 1>&2
-				false
-				;;
-		esac
-
-		case "$VERSION_ID" in
-			*.*.* | *.*.*.* )
-				VERSION_ID=$(echo $VERSION_ID | sed "y/./ /" | while read A B C; do echo $A.$B; done )
-				;;
-			* )
-				;;
-		esac
-
-		for d in $( . /etc/os-release ; echo $ID $ID_LIKE )
+		while read SRC DEST
 		do
-			case "$d" in
-				rhel | fedora | mariner | opensuse* )
-					VERSION_ID=$(echo $VERSION_ID | sed "y/./ /" | while read A B; do echo $A; done )
-					;;
-				* )
-					;;
-			esac
-		done
-
-		case "$ID" in
-			opensuse-* )
-				ID=opensuse
-				;;
-			* )
-				;;
-		esac
+			DLL="pkg/runtimes/$RIDOS-$DEST/native/$DLLNAME.dll"
+			mkdir -p $(dirname $DLL)
+			lipo "$DLLPATH" -extract $SRC -output "$DLL"
+			codesign --timestamp --sign "Developer ID Application: $APPLE_DEVELOPER" "$DLL"
+		done <<EOF
+arm64 arm64
+x86_64 x64
+EOF
+		mkdir -p "pkg/runtimes/$RIDOS/native"
+		lipo "pkg/runtimes/$RIDOS-"*"/native/$DLLNAME.dll" -create -output "pkg/runtimes/$RIDOS/native/$DLLNAME.dll"
 		;;
 	* )
-		ARCH=$(arch)
-		ID=$(uname -s)
-		VERSION_ID=$(uname -r)
+		RUNTIME="runtimes/$RID/native"
+		mkdir -p "pkg/$RUNTIME"
+		mv "$DLLPATH" "pkg/$RUNTIME/"
 		;;
 esac
-
-if test -z "$ARCH"
-then
-	RUNTIME="$ID.$VERSION_ID"
-else
-	RUNTIME="$ID.$VERSION_ID-$ARCH"
-fi
-
-RUNTIME="runtimes/$RUNTIME/native"
-
-mkdir -p "pkg/$RUNTIME"
-
-mv "$DLLPATH" "pkg/$RUNTIME/"
 
 (
 	set -e
 
 	cd pkg
 
-	zip "../$DLLNAME-$VERSION-$ID.$VERSION_ID.zip" "$RUNTIME/$DLLNAME.dll"
+	zip "../$DLLNAME-$VERSION-$RIDOS.zip" $(find runtimes -type f -name "$DLLNAME.dll")
 )

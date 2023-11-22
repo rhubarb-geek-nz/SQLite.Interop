@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-#  Copyright 2022, Roger Brown
+#  Copyright 2023, Roger Brown
 #
 #  This file is part of rhubarb-geek-nz/SQLite.Interop.
 #
@@ -24,7 +24,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT
 
 clean()
 {
-	rm -rf test.db bin obj tmp dotnet-sdk dotnet-install.sh
+	rm -rf test.db */bin */obj tmp dotnet-sdk dotnet-install.sh
 }
 
 clean 
@@ -52,23 +52,26 @@ else
 
 	chmod +x dotnet-install.sh
 
-	./dotnet-install.sh	--install-dir dotnet-sdk
+	./dotnet-install.sh --install-dir dotnet-sdk --channel 6.0
 
 	DOTNET="dotnet-sdk/dotnet"
 fi
 
-"$DOTNET" build test.csproj --configuration Release
+"$DOTNET" build test/test.csproj --configuration Release
+"$DOTNET" build rid/rid.csproj --configuration Release
+RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
 
 (
 	set -e
 
-	cd bin/Release/net6.0/
+	cd test/bin/Release/net6.0/
 
 	find runtimes -name SQLite.Interop.dll -type f
 	rm -rf runtimes
 
-	unzip ../../../SQLite.Interop*.zip
-	mv $(find . -name SQLite.Interop.dll -type f) .
+	unzip ../../../../SQLite.Interop*.zip
+	mv "runtimes/$RID/native/SQLite.Interop.dll" .
+	rm -rf runtimes
 )
 
 (
@@ -96,9 +99,9 @@ fi
 
 	unzip "$ZIPNAME" "*.dll"
 
-	mv *.dll "../bin/Release/net6.0"
+	mv *.dll "../test/bin/Release/net6.0"
 )
 
 rm -rf tmp
 
-"$DOTNET" bin/Release/net6.0/test.dll
+"$DOTNET" test/bin/Release/net6.0/test.dll
