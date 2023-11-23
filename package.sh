@@ -130,5 +130,7 @@ esac
 
 	cd pkg
 
+	find runtimes -type f | xargs chmod -x
+
 	zip "../$DLLNAME-$VERSION-$RIDOS.zip" $(find runtimes -type f -name "$DLLNAME.dll")
 )
