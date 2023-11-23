@@ -18,6 +18,11 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+VERSION=1.0.118.0
+SHA256=21093e5ffa803009c6b02e5f5495b5e07971fd0371c667359960419068a432f2
+
+ZIPNAME="sqlite-netStandard20-binary-$VERSION.zip"
+
 DOTNET=dotnet
 DOTNET_CLI_TELEMETRY_OPTOUT=true
 export DOTNET_CLI_TELEMETRY_OPTOUT
@@ -57,8 +62,11 @@ else
 	DOTNET="dotnet-sdk/dotnet"
 fi
 
-"$DOTNET" build test/test.csproj --configuration Release
-"$DOTNET" build rid/rid.csproj --configuration Release
+for d in */*.csproj
+do
+	"$DOTNET" build "$d" --configuration Release
+done
+
 RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
 
 (
@@ -80,11 +88,6 @@ RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
 	mkdir tmp
 
 	cd tmp
-
-	VERSION=1.0.118.0
-
-	ZIPNAME="sqlite-netStandard20-binary-$VERSION.zip"
-	SHA256=21093e5ffa803009c6b02e5f5495b5e07971fd0371c667359960419068a432f2
 
 	curl --silent --fail --output "$ZIPNAME" --location "https://system.data.sqlite.org/blobs/$VERSION/$ZIPNAME"
 
