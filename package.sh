@@ -54,7 +54,33 @@ fi
 "$DOTNET" build rid/rid.csproj --configuration Release
 
 RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
-RIDOS=$(echo $RID | sed y/\-/\ / | while read A B; do echo $A; done)
+RIDOS=$(
+	echo $RID | sed y/-/\ / | while read A
+	do
+		RIDBASE=
+		RIDLAST=
+
+		for D in $A
+		do
+			if test -n "$RIDLAST"
+			then
+				if test -z "$RIDBASE"
+				then
+					RIDBASE="$RIDLAST"
+				else
+					RIDBASE="$RIDBASE-$RIDLAST"
+				fi
+			fi
+
+			RIDLAST=$D
+		done
+
+		echo $RIDBASE
+	done
+)
+
+echo RID=$RID
+echo RIDOS=$RIDOS
 
 cleanup
 
