@@ -36,14 +36,7 @@ cleanup
 
 curl --silent --fail --output "$ZIPNAME" --location "https://system.data.sqlite.org/blobs/$VERSION/$ZIPNAME"
 
-case $(uname) in
-	Darwin )
-		shasum -a 256 "$ZIPNAME" | grep "^$SHA256"
-		;;
-	* )
-		sha256sum "$ZIPNAME" | grep "^$SHA256"
-		;;
-esac
+sha256sum "$ZIPNAME" | grep "^$SHA256"
 
 mkdir src
 
@@ -52,19 +45,6 @@ mkdir src
 	cd src
 	unzip -q "../$ZIPNAME"
 	cd Setup
-	case $(uname) in
-		Darwin )
-			if grep "arch arm64" compile-interop-assembly-release.sh
-			then
-				:
-			else
-				sed "s/-arch x86_64/-arch x86_64 -arch arm64/g" < compile-interop-assembly-release.sh > compile-interop-assembly-osx.sh 
-				mv compile-interop-assembly-osx.sh compile-interop-assembly-release.sh 
-			fi
-			;;
-		* )
-			;;
-	esac
 	chmod +x compile-interop-assembly-release.sh
 	./compile-interop-assembly-release.sh
 )
@@ -72,91 +52,40 @@ mkdir src
 DLLNAME=SQLite.Interop
 DLLPATH="src/bin/2013/Release/bin/$DLLNAME.dll"
 
+chmod -x "$DLLPATH"
+
+patchelf --remove-rpath "$DLLPATH"
+
+objdump -p "$DLLPATH" | grep NEEDED
+
+strip "$DLLPATH"
+
 ls -ld $(dirname "$DLLPATH")/*
 
-if strip "$DLLPATH" 2>/dev/null
-then
-	ls -ld "$DLLPATH"
-fi
+FORMAT=$( objdump -p "$DLLPATH" | grep "$DLLNAME.dll" | while read A; do for B in $A; do C="$B"; done ; echo "$C"; break; done )
 
-case $(uname) in
-	Darwin )
-		ID="osx"
-		if test -z "$MACOSX_DEPLOYMENT_TARGET"
-		then
-			VERSION_ID=$(sw_vers -productVersion)
-		else
-			VERSION_ID="$MACOSX_DEPLOYMENT_TARGET"
-		fi
-		ARCH=
+case "$FORMAT" in
+	*arm )
+		ARCH=arm
 		;;
-	Linux )
-		FORMAT=$( objdump -p "$DLLPATH" | grep "$DLLNAME.dll" | while read A; do for B in $A; do C="$B"; done ; echo "$C"; break; done ) 
-
-		ID=$( . /etc/os-release ; echo $ID )
-		VERSION_ID=$( . /etc/os-release ; echo $VERSION_ID )
-
-		case "$FORMAT" in
-			*arm )
-				ARCH=arm
-				;;
-			*aarch64 )
-				ARCH=arm64
-				;;
-			*x86-64 )
-				ARCH=x64
-				;;
-			*i386 )
-				ARCH=x86
-				;;
-			* )
-				echo FORMAT="$FORMAT" 1>&2
-				false
-				;;
-		esac
-
-		case "$VERSION_ID" in
-			*.*.* | *.*.*.* )
-				VERSION_ID=$(echo $VERSION_ID | sed "y/./ /" | while read A B C; do echo $A.$B; done )
-				;;
-			* )
-				;;
-		esac
-
-		for d in $( . /etc/os-release ; echo $ID $ID_LIKE )
-		do
-			case "$d" in
-				rhel | fedora | mariner | opensuse* )
-					VERSION_ID=$(echo $VERSION_ID | sed "y/./ /" | while read A B; do echo $A; done )
-					;;
-				* )
-					;;
-			esac
-		done
-
-		case "$ID" in
-			opensuse-* )
-				ID=opensuse
-				;;
-			* )
-				;;
-		esac
+	*aarch64 )
+		ARCH=arm64
+		;;
+	*x86-64 )
+		ARCH=x64
+		;;
+	*i386 )
+		ARCH=x86
 		;;
 	* )
-		ARCH=$(arch)
-		ID=$(uname -s)
-		VERSION_ID=$(uname -r)
+		echo FORMAT="$FORMAT" 1>&2
+		false
 		;;
 esac
 
-if test -z "$ARCH"
-then
-	RUNTIME="$ID.$VERSION_ID"
-else
-	RUNTIME="$ID.$VERSION_ID-$ARCH"
-fi
+ID="linux-bionic"
 
-RUNTIME="runtimes/$RUNTIME/native"
+RUNTIME="runtimes/$ID-$ARCH/native"
 
 mkdir -p "pkg/$RUNTIME"
 
@@ -167,5 +96,5 @@ mv "$DLLPATH" "pkg/$RUNTIME/"
 
 	cd pkg
 
-	zip "../$DLLNAME-$VERSION-$ID.$VERSION_ID.zip" "$RUNTIME/$DLLNAME.dll"
+	zip "../$DLLNAME-$VERSION-$ID.zip" "$RUNTIME/$DLLNAME.dll"
 )
