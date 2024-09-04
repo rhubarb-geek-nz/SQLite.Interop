@@ -26,6 +26,7 @@ ZIPNAME="sqlite-netFx-source-$VERSION.zip"
 DOTNET=dotnet
 DOTNET_CLI_TELEMETRY_OPTOUT=true
 export DOTNET_CLI_TELEMETRY_OPTOUT
+FRAMEWORK=net8.0
 
 cleanup()
 {
@@ -46,14 +47,14 @@ else
 
 	chmod +x dotnet-install.sh
 
-	./dotnet-install.sh --install-dir dotnet-sdk --channel 6.0
+	./dotnet-install.sh --install-dir dotnet-sdk --channel $(echo "$FRAMEWORK" | sed s/net// )
 
 	DOTNET="dotnet-sdk/dotnet"
 fi
 
-"$DOTNET" build rid/rid.csproj --configuration Release
+"$DOTNET" build rid/rid.csproj --configuration Release --framework "$FRAMEWORK"
 
-RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
+RID=$("$DOTNET" "rid/bin/Release/$FRAMEWORK/rid.dll")
 RIDOS=$(
 	echo $RID | sed y/-/\ / | while read A
 	do
@@ -115,8 +116,7 @@ mkdir src
 		* )
 			;;
 	esac
-	chmod +x compile-interop-assembly-release.sh
-	./compile-interop-assembly-release.sh
+	bash ./compile-interop-assembly-release.sh
 )
 
 DLLNAME=SQLite.Interop

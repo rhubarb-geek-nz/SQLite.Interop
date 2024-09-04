@@ -25,6 +25,7 @@ ZIPNAME="sqlite-netStandard20-binary-$VERSION.zip"
 
 DOTNET=dotnet
 DOTNET_CLI_TELEMETRY_OPTOUT=true
+FRAMEWORK=net8.0
 export DOTNET_CLI_TELEMETRY_OPTOUT
 
 clean()
@@ -57,22 +58,22 @@ else
 
 	chmod +x dotnet-install.sh
 
-	./dotnet-install.sh --install-dir dotnet-sdk --channel 6.0
+	./dotnet-install.sh --install-dir dotnet-sdk --channel $(echo "$FRAMEWORK" | sed s/net// )
 
 	DOTNET="dotnet-sdk/dotnet"
 fi
 
 for d in */*.csproj
 do
-	"$DOTNET" build "$d" --configuration Release
+	"$DOTNET" build "$d" --configuration Release --framework "$FRAMEWORK"
 done
 
-RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
+RID=$("$DOTNET" "rid/bin/Release/$FRAMEWORK/rid.dll")
 
 (
 	set -e
 
-	cd test/bin/Release/net6.0/
+	cd "test/bin/Release/$FRAMEWORK/"
 
 	find runtimes -name SQLite.Interop.dll -type f
 	rm -rf runtimes
@@ -102,9 +103,9 @@ RID=$("$DOTNET" rid/bin/Release/net6.0/rid.dll)
 
 	unzip "$ZIPNAME" "*.dll"
 
-	mv *.dll "../test/bin/Release/net6.0"
+	mv *.dll "../test/bin/Release/$FRAMEWORK"
 )
 
 rm -rf tmp
 
-"$DOTNET" test/bin/Release/net6.0/test.dll
+"$DOTNET" "test/bin/Release/$FRAMEWORK/test.dll"
