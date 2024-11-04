@@ -18,8 +18,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
-VERSION=1.0.118.0
-SHA256=21093e5ffa803009c6b02e5f5495b5e07971fd0371c667359960419068a432f2
+VERSION=1.0.119.0
+SHA256=d0604eaf9d3bb43184c8dbdeec995dd02d13efd7626042b0e9aebb48f9827d9b
 
 ZIPNAME="sqlite-netStandard20-binary-$VERSION.zip"
 
